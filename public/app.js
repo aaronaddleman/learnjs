@@ -27,7 +27,7 @@ learnjs.template = function(name) {
 learnjs.buildCorrectFlash = function (problemNum) {
   var correctFlash = learnjs.template('correct-flash');
   var link = correctFlash.find('a');
-  if (problemNum < learnjs.problems.length) {
+  if (problemNum < learnjs.problems.length ) {
     link.attr('href', '#problem-' + (problemNum + 1));
   } else {
     link.attr('href', '');
@@ -47,12 +47,11 @@ learnjs.problemView = function(data) {
     var test = problemData.code.replace('__', answer) + '; problem();';
     return eval(test);
   }
-  
+
   function checkAnswerClick() {
     if (checkAnswer()) {
       var correctFlash = learnjs.template('correct-flash');
-      correctFlash.find('a').attr('href', '#problem-' + (problemNumber + 1 ));
-      learnjs.flashElement(resultFlash, correctFlash);
+      learnjs.flashElement(resultFlash, learnjs.buildCorrectFlash(problemNumber));
     } else {
       learnjs.flashElement(resultFlash, 'Incorrect!');
     }
@@ -65,9 +64,14 @@ learnjs.problemView = function(data) {
   return view;
 }
 
+learnjs.landingView = function() {
+  return learnjs.template('landing-view');
+}
+
 learnjs.showView = function(hash) {
   var routes = {
-    '#problem': learnjs.problemView
+    '#problem': learnjs.problemView,
+    '': learnjs.landingView
   };
   var hashParts = hash.split('-');
   var viewFn = routes[hashParts[0]];
@@ -76,6 +80,7 @@ learnjs.showView = function(hash) {
     $('.view-container').empty().append(viewFn(hashParts[1]));
   }
 }
+
 
 learnjs.appOnReady = function() {
   window.onhashchange = function() {
