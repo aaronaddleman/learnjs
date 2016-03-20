@@ -2,11 +2,32 @@
 <html>
   <head>
     <meta charset='utf-8'>
+    <meta name="google-signin-client_id" content="906112867911-coomhbkesu71skl83ko39pu44rm4llkd.apps.googleusercontent.com">
     <title>Learn JS!</title>
     <link href='//fonts.googleapis.com/css?family=Raleway:400,300,600' rel='stylesheet' type='text/css'>
     <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/normalize/3.0.2/normalize.min.css'>
     <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css'>
     <script src='https://code.jquery.com/jquery-2.1.4.min.js'></script>
+    <!-- load google sdk -->
+    <script src='https://apis.google.com/js/platform.js' async defer></script>
+    <!-- load facebook sdk -->
+    <script>
+      window.fbAsyncInit = function() {
+        FB.init({
+          appId      : '247558515584537',
+          xfbml      : true,
+          version    : 'v2.5'
+        });
+      };
+
+      (function(d, s, id){
+         var js, fjs = d.getElementsByTagName(s)[0];
+         if (d.getElementById(id)) {return;}
+         js = d.createElement(s); js.id = id;
+         js.src = "//connect.facebook.net/en_US/sdk.js";
+         fjs.parentNode.insertBefore(js, fjs);
+       }(document, 'script', 'facebook-jssdk'));
+    </script>
     <script src='/vendor.js'></script>
     <script src='/app.js'></script>
     <style type="text/css" media="all">
@@ -38,6 +59,10 @@
         background: #666;
       }
       .nav-container a { color: white; }
+      .navbar-padding {
+        padding-top: 7px;
+        display: inline-block;
+      }
     </style>
   </head>
   <body>
@@ -47,10 +72,23 @@
           <li><a class='text-lg' href='#'>LearnJS</a></li>
           <li><a href="#problem-1">Start</a></li>
         </ul>
+        <div class='four columns signin-bar'>
+          <span class='navbar-padding u-pull-right'>
+            <span class='g-signin2' data-onsuccess='googleSignIn'></span>
+          </span>
+        </div>
+        <div class="four columns fb-login-button" data-max-rows="1" data-size="medium" data-show-faces="false" data-auto-logout-link="false"></div>
       </div>
       <div class='view-container container'>
       </div>
       <div class='templates'>
+        <div class='profile-link navbar-padding-lg'>
+          <a href='#profile'></a>
+        </div>
+        <div class='profile-view'>
+          <h3>Your Profile</h3>
+          <div class='email'></div>
+        </div>
         <li class='skip-btn'>
           <a>Skip This Problem</a>
         </li>
