@@ -8,7 +8,7 @@
     <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/normalize/3.0.2/normalize.min.css'>
     <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css'>
     <script src='https://code.jquery.com/jquery-2.1.4.min.js'></script>
-    <!-- load google sdk -->
+    <!-- load google -->
     <script src='https://apis.google.com/js/platform.js' async defer></script>
     <!-- load facebook sdk -->
     <script>
@@ -28,6 +28,7 @@
          fjs.parentNode.insertBefore(js, fjs);
        }(document, 'script', 'facebook-jssdk'));
     </script>
+    <!-- load facebook sdk -->
     <script src='/vendor.js'></script>
     <script src='/app.js'></script>
     <style type="text/css" media="all">
@@ -71,13 +72,12 @@
         <ul class='inline-list hover-links nav-list six columns'>
           <li><a class='text-lg' href='#'>LearnJS</a></li>
           <li><a href="#problem-1">Start</a></li>
+          <li><a href="/auth.html">Auth</a></li>
         </ul>
         <div class='four columns signin-bar'>
           <span class='navbar-padding u-pull-right'>
-            <span class='g-signin2' data-onsuccess='googleSignIn'></span>
           </span>
         </div>
-        <div class="four columns fb-login-button" data-max-rows="1" data-size="medium" data-show-faces="false" data-auto-logout-link="false"></div>
       </div>
       <div class='view-container container'>
       </div>
@@ -88,6 +88,20 @@
         <div class='profile-view'>
           <h3>Your Profile</h3>
           <div class='email'></div>
+          <div class='four columns signin-bar'>
+            <span class='navbar-padding u-pull-right'>
+              <span class='g-signin2' data-onsuccess='googleSignIn'></span>
+            </span>
+          </div>
+
+          <div>
+            <fb:login-button scope="public_profile,email" onlogin="fbCheckLoginState();">
+            </fb:login-button>
+
+            <div id="status">
+            </div>
+          </div>
+          
         </div>
         <li class='skip-btn'>
           <a>Skip This Problem</a>
@@ -100,6 +114,15 @@
             </div>
             <div class='one-half column'>
               <img src='/images/HeroImage.jpg'>
+            </div>
+            <div class='four columns signin-bar'>
+              <span class='navbar-padding u-pull-right'>
+                <span class='g-signin2' data-onsuccess='googleSignIn'></span>
+              </span>
+            </div>
+            <fb:login-button scope="public_profile,email" onlogin="fbCheckLoginState();">
+            </fb:login-button>
+            <div id="status">
             </div>
           </div>
         </div>

@@ -55,7 +55,8 @@ learnjs.problemView = function(data) {
   var view = $('.templates .problem-view').clone();
   var problemData = learnjs.problems[problemNumber - 1];
   var resultFlash = view.find('.result');
-  
+  var answer = view.find('.answer');
+
   function checkAnswer() {
     var answer = view.find('.answer').val();
     var test = problemData.code.replace('__', answer) + '; problem();';
@@ -64,8 +65,9 @@ learnjs.problemView = function(data) {
 
   function checkAnswerClick() {
     if (checkAnswer()) {
-      var correctFlash = learnjs.template('correct-flash');
-      learnjs.flashElement(resultFlash, learnjs.buildCorrectFlash(problemNumber));
+      var flashContent = learnjs.buildCorrectFlash(problemNumber);
+      learnjs.flashElement(resultFlash, flashContent);
+      learnjs.saveAnswer(problemNumber, answer.val());
     } else {
       learnjs.flashElement(resultFlash, 'Incorrect!');
     }
@@ -80,6 +82,16 @@ learnjs.problemView = function(data) {
       buttonItem.remove();
     });
   }
+
+  learnjs.fetchAnswer(problemNumber).then(function(data) {
+    console.log("fetchAnswer pN")
+    if (data.Item) {
+      console.log("fetchAnswer pn: " + JSON.stringify(data.Item) )
+      answer.val(data.Item.answer);
+    } else {
+      console.log("fetchAnswer pn: no data.item")
+    }
+  });
 
   view.find('.check-btn').click(checkAnswerClick);
   view.find('.title').text('Problem #' + problemNumber);
@@ -136,6 +148,72 @@ learnjs.flashElement = function(elem, content) {
   });
 }
 
+learnjs.sendDbRequest = function(req, retry) {
+  var promise = new $.Deferred();
+  req.on('error', function(error) {
+    if (error.code == 'CredentialsError') {
+      learnjs.identity.then(function(identity) {
+        return identity.refresh().then(function() {
+          return retry();
+        }, function() {
+          promise.reject(resp);
+        });
+      });
+    } else {
+      promise.reject(error);
+    }
+  });
+  req.on('success', function(resp) {
+    console.log("sendDbRequest")
+    promise.resolve(resp.data);
+  });
+  req.send();
+  return promise;
+}
+
+learnjs.fetchAnswer = function(problemId) {
+  return 3
+};
+
+learnjs.saveAnswer = function(problemId, answer) {
+
+  return learnjs.identity.then(function(identity) {
+    console.log("saveAnswer start :" + JSON.stringify(identity))
+    var db = new AWS.DynamoDB.DocumentClient();
+    var item = {
+      TableName: 'learnjs',
+      Item: {
+        userId: identity.id,
+        problemId: problemId,
+        answer: answer
+      }
+    };
+    return learnjs.sendDbRequest(db.put(item), function() {
+      return learnjs.saveAnswer(problemId, answer);
+    })
+  });
+};
+
+learnjs.fetchAnswer = function(problemId) {
+  return learnjs.identity.then(function(identity) {
+    console.log("fetchAnswer start :" + JSON.stringify(identity))
+    var db = new AWS.DynamoDB.DocumentClient();
+    var item = {
+      TableName: 'learnjs',
+      Key: {
+        userId: identity.id,
+        problemId: problemId
+      }
+    };
+
+    return learnjs.sendDbRequest(db.get(item), function() {
+      console.log("fetchAnswer value: " + JSON.stringify(db.get(item)))
+      return learnjs.fetchAnswer(problemId);
+    })
+  });
+  console.log("fetchAnswer end")
+};
+
 learnjs.awsRefresh = function() {
   var deferred = new $.Deferred();
   AWS.config.credentials.refresh(function(err) {
@@ -176,29 +254,104 @@ function googleSignIn(googleUser) {
       refresh: refresh
     });
   });
+}
 
-  function fbSignIn(fbUser) {
-    // This is called with the results from from FB.getLoginStatus().
-    function statusChangeCallback(response) {
-      console.log('statusChangeCallback');
-      console.log(response);
-      // The response object is returned with a status field that lets the
-      // app know the current login status of the person.
-      // Full docs on the response object can be found in the documentation
-      // for FB.getLoginStatus().
-      if (response.status === 'connected') {
-        // Logged into your app and Facebook.
-        testAPI();
-      } else if (response.status === 'not_authorized') {
-        // The person is logged into Facebook, but not your app.
-        document.getElementById('status').innerHTML = 'Please log ' +
-          'into this app.';
-      } else {
-        // The person is not logged into Facebook, so we're not sure if
-        // they are logged into this app or not.
-        document.getElementById('status').innerHTML = 'Please log ' +
-          'into Facebook.';
-      }
-    }
+function fbCheckLoginState() {
+  FB.getLoginStatus(function(response) {
+    fbStatusChangeCallback(response);
+  });
+  console.log("checking fb login")
+}
+
+  // function refresh() {
+  //   return gapi.auth2.getAuthInstance().signIn({
+  //       prompt: 'login'
+  //     }).then(function(userUpdate) {
+  //     var creds = AWS.config.credentials;
+  //     var newToken = userUpdate.getAuthResponse().id_token;
+  //     creds.params.Logins['accounts.google.com'] = newToken;
+  //     return learnjs.awsRefresh();
+  //   });
+  // }
+  // learnjs.awsRefresh().then(function(id) {
+  //   learnjs.identity.resolve({
+  //     id: id,
+  //     email: googleUser.getBasicProfile().getEmail(),
+  //     refresh: refresh
+  //   });
+  // });
+
+
+// This is called with the results from from FB.getLoginStatus().
+function fbStatusChangeCallback(response) {
+  var fb_id_token = FB.getAccessToken();
+  console.log('statusChangeCallback');
+  console.log(response);
+  // The response object is returned with a status field that lets the
+  // app know the current login status of the person.
+  // Full docs on the response object can be found in the documentation
+  // for FB.getLoginStatus().
+  if (response.status === 'connected') {
+    // Logged into your app and Facebook.
+    testAPI();
+
+    AWS.config.update({
+      region: 'us-east-1',
+      credentials: new AWS.CognitoIdentityCredentials({
+        IdentityPoolId: learnjs.poolId,
+        Logins: {
+          'graph.facebook.com': fb_id_token
+        }
+      })
+    })
+
+    // AWS.config.credentials.get(function() {
+    //   console.log("aws creds");
+    // })
+
+  } else if (response.status === 'not_authorized') {
+    // The person is logged into Facebook, but not your app.
+    document.getElementById('status').innerHTML = 'Please log ' +
+      'into this app.';
+  } else {
+    // The person is not logged into Facebook, so we're not sure if
+    // they are logged into this app or not.
+    document.getElementById('status').innerHTML = 'Please log ' +
+      'into Facebook.';
   }
+  function refresh() {
+    return gapi.auth2.getAuthInstance().signIn({
+        prompt: 'login'
+      }).then(function(userUpdate) {
+      var creds = AWS.config.credentials;
+      var newToken = userUpdate.getAuthResponse().accessToken;
+      creds.params.Logins['graph.facebook.com'] = newToken;
+      return learnjs.awsRefresh();
+      console.log("fb refresh: " + newToken);
+    });
+  }
+  learnjs.awsRefresh().then(function(id) {
+    learnjs.identity.resolve({
+      id: id,
+      email: function() {
+        FB.api('/me', { locale: 'en_US', fields: 'name, email' },
+          function(response) {
+            console.log(response.email);
+          }
+        );
+      },
+      refresh: refresh
+    });
+  });
+}
+
+// Here we run a very simple test of the Graph API after login is
+// successful.  See statusChangeCallback() for when this call is made.
+function testAPI() {
+  console.log('Welcome!  Fetching your information.... ');
+  FB.api('/me', function(response) {
+    console.log('Successful login for: ' + response.name);
+    document.getElementById('status').innerHTML =
+      'Thanks for logging in, ' + response.name + '!';
+  });
 }
